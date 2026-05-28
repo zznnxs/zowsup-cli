@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { App as AntApp, Button, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { App as AntApp, Button, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 
 import { Proxy, proxiesApi } from '../api/client';
 
@@ -118,7 +118,7 @@ export function ProxiesPage() {
             <Input placeholder="proxy.example.com" />
           </Form.Item>
           <Form.Item name="port" label="端口" rules={[{ required: true }]}>
-            <Input type="number" placeholder="1080" />
+            <InputNumber min={1} max={65535} style={{ width: '100%' }} placeholder="1080" />
           </Form.Item>
           <Form.Item name="username" label="用户名（可空）">
             <Input placeholder="user-{session_id}" />

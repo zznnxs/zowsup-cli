@@ -36,25 +36,32 @@ func Router(d Deps) http.Handler {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(corsMiddleware)
 
-	r.Get("/api/healthz", healthz)
-	r.Route("/api/proxies", func(r chi.Router) {
-		r.Get("/", d.listProxies)
-		r.Post("/", d.createProxy)
-		r.Delete("/{id}", d.deleteProxy)
-	})
-	r.Route("/api/accounts", func(r chi.Router) {
-		r.Get("/", d.listAccounts)
-		r.Post("/", d.createAccount)
-		r.Get("/{id}", d.getAccount)
-		r.Delete("/{id}", d.deleteAccount)
-		r.Patch("/{id}/proxy", d.setAccountProxy)
-		r.Post("/{id}/start", d.startAccount)
-		r.Post("/{id}/stop", d.stopAccount)
-	})
+	// /api/events hijacks the connection for a websocket; chi's Timeout
+	// middleware wraps the response writer and tries to WriteHeader after
+	// the deadline, which logs spurious errors and racks up data races
+	// against the hijacked conn. Keep Timeout scoped to REST handlers only.
 	r.Get("/api/events", d.events)
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Timeout(60 * time.Second))
+		r.Get("/api/healthz", healthz)
+		r.Route("/api/proxies", func(r chi.Router) {
+			r.Get("/", d.listProxies)
+			r.Post("/", d.createProxy)
+			r.Delete("/{id}", d.deleteProxy)
+		})
+		r.Route("/api/accounts", func(r chi.Router) {
+			r.Get("/", d.listAccounts)
+			r.Post("/", d.createAccount)
+			r.Get("/{id}", d.getAccount)
+			r.Delete("/{id}", d.deleteAccount)
+			r.Patch("/{id}/proxy", d.setAccountProxy)
+			r.Post("/{id}/start", d.startAccount)
+			r.Post("/{id}/stop", d.stopAccount)
+		})
+	})
 	return r
 }
 
